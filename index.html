@@ -10,8 +10,10 @@
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <!-- Menggunakan Google Fonts untuk tipografi yang bersih dan tenang -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+    <!-- SUPABASE CLIENT LIBRARY -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         /* Mengaplikasikan font ke seluruh halaman */
         body {
@@ -77,7 +79,7 @@
                         <p id="login-error" class="text-red-500 text-sm mb-4 hidden"></p>
                         <button type="submit" class="w-full bg-sky-500 text-white py-3 rounded-lg font-semibold hover:bg-sky-600 active:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-opacity-75 smooth-transition shadow-md hover:shadow-lg">Masuk</button>
                     </form>
-                    <p class="text-xs text-slate-400 mt-8 text-center">Pengguna Demo: (username: siswa1, pass: siswa) atau (username: admin1, pass: admin)</p>
+                    <p class="text-xs text-slate-400 mt-8 text-center">Login setelah menghubungkan ke Supabase. Data demo tidak lagi digunakan.</p>
                 </div>
             </div>
         </div>
@@ -133,31 +135,60 @@
 
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             // ====================================================== //
-            //                   DATA SIMULASI                        //
+            //                KONEKSI KE SUPABASE                     //
             // ====================================================== //
 
-            const motivationalQuotes = ["Buku adalah jendela dunia.", "Hari ini pembaca, besok pemimpin.", "Membaca adalah olahraga untuk pikiran."];
-            let users = [{ id: 1, username: 'siswa1', password: 'siswa', role: 'student', name: 'Budi' }, { id: 2, username: 'admin1', password: 'admin', role: 'admin', name: 'Admin Pustaka' }, { id: 3, username: 'siswa2', password: 'siswa', role: 'student', name: 'Ani' }, { id: 4, username: 'siswa3', password: 'siswa', role: 'student', name: 'Cici' }];
-            const genres = [{ id: 1, name: 'Fiksi Ilmiah' }, { id: 2, name: 'Petualangan' }, { id: 3, name: 'Pendidikan' }, { id: 4, name: 'Sejarah' }, { id: 5, name: 'Biografi' }];
-            let books = [
-                { id: 1, title: 'Jelajah Antariksa', author: 'Dr. Arifin', genreId: 1, rating: 4.5, status: 'Tersedia', description: 'Sebuah perjalanan mendebarkan melintasi galaksi.', cover: 'https://placehold.co/400x600/0ea5e9/ffffff?text=Jelajah+Antariksa', content: 'Di hamparan kosmos yang tak terbatas, Kapten Elara memandang gugusan bintang Andromeda dari jendela kapalnya...', approved: true, comments: [{user: 'Ani', text: 'Ceritanya seru banget!'}, {user: 'Cici', text: 'Jadi pengen ke luar angkasa.'}] },
-                { id: 2, title: 'Misteri Harta Karun', author: 'Andi Wijaya', genreId: 2, rating: 4.8, status: 'Tersedia', description: 'Tiga sahabat menemukan peta kuno yang membawa mereka ke petualangan.', cover: 'https://placehold.co/400x600/f59e0b/ffffff?text=Misteri+Harta+Karun', content: 'Di sebuah desa pesisir yang tenang, tiga sahabat—Leo, Maya, dan Dika—menemukan sebuah botol tua...', approved: true, comments: [{user: 'Budi', text: 'Teka-tekinya susah tapi keren.'}] },
-                { id: 3, title: 'Dasar-Dasar Fisika', author: 'Prof. Surya', genreId: 3, rating: 4.2, status: 'Dipinjam', description: 'Buku panduan lengkap untuk memahami konsep dasar fisika.', cover: 'https://placehold.co/400x600/10b981/ffffff?text=Dasar-Dasar+Fisika', content: 'Fisika adalah ilmu yang mempelajari alam semesta...', approved: true, comments: [] },
-                { id: 4, title: 'Sejarah Kerajaan Nusantara', author: 'Bambang S.', genreId: 4, rating: 4.6, status: 'Tersedia', description: 'Mengupas tuntas sejarah kerajaan-kerajaan besar di tanah air.', cover: 'https://placehold.co/400x600/8b5cf6/ffffff?text=Sejarah+Nusantara', content: 'Jauh sebelum Indonesia merdeka, Nusantara adalah rumah bagi kerajaan-kerajaan maritim yang megah...', approved: true, comments: [{user: 'Ani', text: 'Jadi lebih paham sejarah!'}] },
-                { id: 5, title: 'Biografi Sang Proklamator', author: 'Rina Kartika', genreId: 5, rating: 4.9, status: 'Tersedia', description: 'Kisah hidup inspiratif dari Bapak Proklamator Indonesia.', cover: 'https://placehold.co/400x600/ef4444/ffffff?text=Biografi+Sang+Proklamator', content: 'Soekarno, atau yang akrab disapa Bung Karno, lahir di Surabaya pada 6 Juni 1901...', approved: true, comments: [] },
-                { id: 6, title: 'Puisi Senja', author: 'Penyair Malam', genreId: 1, rating: 0, status: 'Tersedia', description: 'Kumpulan puisi tentang senja dan kerinduan.', cover: 'https://placehold.co/400x600/78716c/ffffff?text=Puisi+Senja', content: 'Langit jingga di ufuk barat, membawa pesan yang tak terucap...', approved: false, comments: [] },
-            ];
+            const SUPABASE_URL = 'https://hfmvmjeguxerznbpnyeo.supabase.co'; // <-- 1. SALIN URL DARI DASBOR SUPABASE & TEMPEL DI SINI
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhmbXZtamVndXhlcnpuYnBueWVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA3NzE0NDMsImV4cCI6MjA3NjM0NzQ0M30._V2dXzegpAsQ50t4DbL4qQyzU3QDUqGOtYDrMGxXoyE'; // <-- 2. SALIN ANON KEY DARI DASBOR SUPABASE & TEMPEL DI SINI
+
+            const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             
             // ====================================================== //
             //                   STATE MANAGEMENT                     //
             // ====================================================== //
-
+            
+            // Data tidak lagi disimpan di sini, tapi akan diambil dari Supabase
+            let users = [];
+            let genres = [];
+            let books = [];
             let currentUser = null;
             let readingList = [];
             let readingHistory = [];
 
+            // ====================================================== //
+            //              FUNGSI PENGAMBILAN DATA (FETCH)           //
+            // ====================================================== //
+
+            async function fetchAllData() {
+                try {
+                    showNotification('Memuat data dari database...');
+                    let { data: genresData, error: genresError } = await supabaseClient.from('genres').select('*');
+                    if (genresError) throw genresError;
+                    genres = genresData;
+
+                    let { data: booksData, error: booksError } = await supabaseClient.from('books').select('*');
+                    if (booksError) throw booksError;
+                    books = booksData;
+                    
+                    let { data: usersData, error: usersError } = await supabaseClient.from('users').select('*');
+                    if(usersError) throw usersError;
+                    users = usersData;
+
+                    console.log('Data berhasil dimuat:', { genres, books, users });
+                } catch (error) {
+                    console.error('Error fetching data:', error.message);
+                    showNotification('Gagal memuat data dari database.', true);
+                }
+            }
+
+
+            // ====================================================== //
+            //                   DATA SIMULASI (Hanya Quotes)         //
+            // ====================================================== //
+            const motivationalQuotes = ["Buku adalah jendela dunia.", "Hari ini pembaca, besok pemimpin.", "Membaca adalah olahraga untuk pikiran."];
+            
             // ====================================================== //
             //                     HELPER FUNCTIONS                   //
             // ====================================================== //
@@ -227,7 +258,7 @@
                 document.querySelector('.read-now-btn').addEventListener('click', e => renderReaderView(e.target.dataset.id));
                 document.querySelector('.toggle-reading-list-btn').addEventListener('click', e => toggleReadingList(e.target.dataset.id));
             }
-
+            
             function renderReaderView(bookId) {
                 const book = books.find(b => b.id == bookId); if (!book) { renderLibrary(); return; }
                 const bookIdInt = parseInt(bookId); if (!readingHistory.includes(bookIdInt)) { readingHistory.push(bookIdInt); }
@@ -246,12 +277,12 @@
                         <article class="prose max-w-none" style="font-size: var(--reader-font-size); font-family: var(--reader-font-family); color: inherit;">
                             <h1 class="text-center">${book.title}</h1>
                             <p class="text-center text-lg">oleh ${book.author}</p>
-                            ${book.content.split('\n').map(p => `<p>${p}</p>`).join('')}
+                            ${(book.content || '').split('\n').map(p => `<p>${p}</p>`).join('')}
                         </article>
                         <div id="comments-section" class="mt-16 pt-8 border-t border-slate-300/70" style="border-color: var(--reader-text-secondary, #94a3b8)">
                             <h2 class="text-2xl font-bold mb-6">Komentar Bab</h2>
                             <div id="comments-list">
-                                ${book.comments.length > 0 ? book.comments.map(c => `
+                                ${book.comments && book.comments.length > 0 ? book.comments.map(c => `
                                     <div class="bg-slate-100 p-4 rounded-lg mb-3" style="background-color: var(--reader-comment-bg, #f1f5f9)">
                                         <p class="font-semibold text-sky-700" style="color: var(--reader-comment-user, #0369a1)">${c.user}</p>
                                         <p class="text-sm">${c.text}</p>
@@ -276,7 +307,7 @@
                         </button>
                         <button id="reader-comment-btn" class="relative flex flex-col items-center justify-center text-slate-600 w-full h-full">
                             <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
-                            <span id="comment-count-badge" class="absolute top-2 right-6 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">${book.comments.length}</span>
+                            <span id="comment-count-badge" class="absolute top-2 right-6 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">${book.comments ? book.comments.length : 0}</span>
                             <span class="text-xs">Komentar</span>
                         </button>
                         <button id="reader-settings-btn" class="flex flex-col items-center justify-center text-slate-600 w-full h-full">
@@ -354,268 +385,403 @@
                 if (listBooks.length > 0) { renderBookGrid(listBooks); } else { document.getElementById('book-grid').innerHTML = `<p class="col-span-full text-center text-slate-500 py-10">Daftar ini masih kosong.</p>`; }
                 document.getElementById('back-to-library-rl').addEventListener('click', renderLibrary);
             }
-
-            // ====================================================== //
-            //              SETTINGS & ACCOUNT RENDERING              //
-            // ====================================================== //
             
             function renderSettingsPage() {
                 document.getElementById('main-content').innerHTML = `
-                    <div class="max-w-2xl mx-auto bg-white rounded-xl shadow-sm">
-                        <header class="relative flex items-center justify-center p-4 border-b">
-                            <button id="back-to-library-settings" class="absolute left-4 text-sky-600 font-medium hover:underline">
-                                Kembali
-                            </button>
-                            <h1 class="text-xl font-semibold">Akun & Pengaturan</h1>
-                        </header>
-                        <div class="p-2">
-                            <ul class="text-slate-800">
-                                ${createSettingItem('Bahasa', 'Indonesia (Default)')}
-                                ${createSettingItem('Usia', '15–17 Tahun')}
-                                <div class="h-px bg-slate-200 my-2"></div>
-                                ${createSettingToggle('Notifikasi')}
-                                ${createSettingItem('Akun Saya', '', 'account-btn')}
-                                ${createSettingItem('Periksa Pembaruan', 'Versi Aplikasi V4.9.8')}
-                                ${createSettingItem('Ubah Password', '', 'change-password-btn')}
-                            </ul>
+                    <h1 class="text-4xl font-bold text-slate-800 mb-8">Akun & Pengaturan</h1>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div class="md:col-span-1">
+                            <h2 class="text-2xl font-semibold">Profil Saya</h2>
+                            <p class="text-slate-500">Informasi dasar akun Anda.</p>
                         </div>
-                    </div>`;
-                
-                document.getElementById('back-to-library-settings').addEventListener('click', renderLibrary);
-                document.getElementById('account-btn').addEventListener('click', renderMyAccountPage);
-                document.getElementById('change-password-btn').addEventListener('click', renderChangePasswordPage);
-            }
-
-            function createSettingItem(label, value, id = '') { return `<li id="${id}" class="${id ? 'cursor-pointer hover:bg-slate-50' : ''} flex justify-between items-center p-4 rounded-lg"><span>${label}</span><div class="flex items-center space-x-2 text-slate-500"><span>${value}</span><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></div></li>`; }
-            function createSettingToggle(label) { return `<li class="flex justify-between items-center p-4"><span>${label}</span><div class="flex items-center"><input type="checkbox" id="notif-toggle" class="hidden toggle-checkbox" checked><label for="notif-toggle" class="toggle-label relative w-11 h-6 bg-slate-300 rounded-full cursor-pointer smooth-transition"><span class="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full smooth-transition"></span></label></div></li>`; }
-            
-            function renderMyAccountPage() {
-                document.getElementById('main-content').innerHTML = `
-                    <div class="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-sm">
-                        <header class="relative flex items-center justify-center mb-6 pb-4 border-b">
-                            <button id="back-to-settings" class="absolute left-0 text-sky-600 font-medium hover:underline">Kembali</button>
-                            <h1 class="text-xl font-semibold">Akun Saya</h1>
-                        </header>
-                        <div class="space-y-4 text-slate-700">
-                            <div class="flex justify-between py-2 border-b"><span class="text-slate-500">Nama Lengkap</span><strong>${currentUser.name}</strong></div>
-                            <div class="flex justify-between py-2 border-b"><span class="text-slate-500">Username</span><strong>${currentUser.username}</strong></div>
-                            <div class="flex justify-between py-2 border-b"><span class="text-slate-500">Peran</span><strong>${currentUser.role}</strong></div>
-                        </div>
-                    </div>`;
-                document.getElementById('back-to-settings').addEventListener('click', renderSettingsPage);
-            }
-
-            function renderChangePasswordPage() {
-                document.getElementById('main-content').innerHTML = `
-                    <div class="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-sm">
-                        <header class="relative flex items-center justify-center mb-6 pb-4 border-b">
-                            <button id="back-to-settings" class="absolute left-0 text-sky-600 font-medium hover:underline">Kembali</button>
-                            <h1 class="text-xl font-semibold">Ubah Password</h1>
-                        </header>
-                        <form id="change-password-form" class="space-y-4">
-                            <div><label for="old-pass" class="block mb-1 text-sm text-slate-600">Password Lama</label><input type="password" id="old-pass" class="w-full border rounded-lg p-2" required></div>
-                            <div><label for="new-pass" class="block mb-1 text-sm text-slate-600">Password Baru</label><input type="password" id="new-pass" class="w-full border rounded-lg p-2" required></div>
-                            <div class="pt-2"><button type="submit" class="w-full bg-sky-500 text-white py-2.5 rounded-lg font-semibold hover:bg-sky-600">Simpan Perubahan</button></div>
-                        </form>
-                    </div>`;
-                document.getElementById('back-to-settings').addEventListener('click', renderSettingsPage);
-                document.getElementById('change-password-form').addEventListener('submit', (e) => { e.preventDefault(); showNotification('Password berhasil diubah (simulasi).'); renderSettingsPage(); });
-            }
-
-            // ====================================================== //
-            //                 ADMIN DASHBOARD FUNCTIONS              //
-            // ====================================================== //
-            function renderAdminDashboard(defaultTab = 'review') {
-                const pendingCount = books.filter(b => !b.approved).length;
-                const pendingBadge = pendingCount > 0 ? `<span class="ml-2 bg-amber-400 text-amber-900 text-xs font-bold px-2 py-0.5 rounded-full">${pendingCount}</span>` : '';
-                
-                document.getElementById('main-content').innerHTML = `
-                    <div class="bg-white p-6 md:p-8 rounded-2xl shadow-lg">
-                        <h1 class="text-3xl font-bold text-slate-800 mb-6">Dasbor Admin</h1>
-                        <div class="border-b border-gray-200">
-                            <nav class="-mb-px flex space-x-8" aria-label="Tabs" id="admin-tabs">
-                                <button data-tab="review" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center">Tinjau Buku ${pendingBadge}</button>
-                                <button data-tab="manage" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center">Kelola Buku</button>
-                                <button data-tab="users" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center">Kelola Pengguna</button>
-                            </nav>
-                        </div>
-                        <div id="admin-tab-content" class="mt-6"></div>
-                    </div>`;
-
-                const tabs = document.querySelectorAll('#admin-tabs button');
-                
-                function setActiveTab(tabName) {
-                    tabs.forEach(btn => {
-                        const is_active = btn.dataset.tab === tabName;
-                        btn.className = is_active 
-                            ? 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-sky-500 text-sky-600 flex items-center'
-                            : 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 flex items-center';
-                    });
-
-                    if (tabName === 'review') renderReviewManagement();
-                    if (tabName === 'manage') renderBookManagement();
-                    if (tabName === 'users') renderUserManagement();
-                }
-
-                tabs.forEach(tab => {
-                    tab.addEventListener('click', (e) => {
-                        setActiveTab(e.currentTarget.dataset.tab);
-                    });
-                });
-
-                setActiveTab(defaultTab);
-            }
-
-            function renderReviewManagement() {
-                const tabContent = document.getElementById('admin-tab-content');
-                const pendingBooks = books.filter(b => !b.approved);
-
-                if (pendingBooks.length === 0) {
-                    tabContent.innerHTML = `<p class="text-center text-slate-500 py-8">Tidak ada buku yang perlu ditinjau.</p>`;
-                    return;
-                }
-
-                let bookRows = pendingBooks.map(book => `
-                    <tr class="border-b"><td class="py-3 px-4 text-slate-700">${book.title}</td><td class="py-3 px-4 text-slate-500">${book.author}</td>
-                    <td class="py-3 px-4 text-right"><button class="review-book-btn bg-sky-500 text-white px-3 py-1 rounded-md text-sm hover:bg-sky-600" data-id="${book.id}">Baca & Tinjau</button></td></tr>`).join('');
-
-                tabContent.innerHTML = `
-                    <h2 class="text-xl font-semibold mb-4">Buku Menunggu Persetujuan</h2>
-                    <div class="overflow-x-auto"><table class="min-w-full bg-white"><thead><tr class="bg-slate-50 border-b"><th class="py-2 px-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Judul</th><th class="py-2 px-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Penulis</th><th class="py-2 px-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Aksi</th></tr></thead><tbody>${bookRows}</tbody></table></div>`;
-                
-                document.querySelectorAll('.review-book-btn').forEach(btn => btn.addEventListener('click', e => renderAdminReviewView(e.target.dataset.id)));
-            }
-
-            function renderAdminReviewView(bookId) {
-                const book = books.find(b => b.id == bookId);
-                if (!book) { renderAdminDashboard(); return; }
-
-                const mainContent = document.getElementById('main-content');
-                document.getElementById('main-header').style.display = 'none'; // Hide main header
-                mainContent.className = 'w-full min-h-screen bg-slate-100'; // Override container class for this view
-                
-                mainContent.innerHTML = `
-                    <div class="max-w-4xl mx-auto py-8 px-4">
-                        <!-- Admin Action Bar -->
-                        <div class="bg-white p-4 rounded-lg shadow-md mb-6 sticky top-4 z-10 flex justify-between items-center">
+                        <div class="md:col-span-2 bg-white p-6 rounded-lg shadow-sm">
+                            <div class="mb-4">
+                                <label class="block text-slate-600">Nama Lengkap</label>
+                                <p class="font-semibold text-lg">${currentUser.name}</p>
+                            </div>
                             <div>
-                                <button id="back-to-dashboard-btn" class="text-sky-600 font-medium hover:underline">Kembali ke Dasbor</button>
+                                <label class="block text-slate-600">Username</label>
+                                <p class="font-semibold text-lg">${currentUser.username}</p>
                             </div>
-                            <div class="flex gap-4">
-                                <button id="admin-approve-btn" data-id="${bookId}" class="bg-emerald-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-emerald-600">Setujui</button>
-                                <button id="admin-reject-btn" data-id="${bookId}" class="bg-red-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-600">Tolak</button>
-                            </div>
-                        </div>
-
-                        <!-- Book Content -->
-                        <div class="bg-white p-8 md:p-12 rounded-lg shadow-md">
-                            <article class="prose max-w-none">
-                                <h1 class="text-center">${book.title}</h1>
-                                <p class="text-center text-lg">oleh ${book.author}</p>
-                                <div class="mt-8">
-                                    ${book.content.split('\n').map(p => `<p>${p}</p>`).join('')}
-                                </div>
-                            </article>
                         </div>
                     </div>
-                `;
+                    <div class="my-8 h-px bg-slate-200"></div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                         <div class="md:col-span-1">
+                            <h2 class="text-2xl font-semibold">Ganti Password</h2>
+                            <p class="text-slate-500">Jaga keamanan akun Anda secara berkala.</p>
+                        </div>
+                        <div class="md:col-span-2 bg-white p-6 rounded-lg shadow-sm">
+                            <form id="change-password-form">
+                                <div class="mb-4">
+                                    <label for="new-pass" class="block text-slate-600 mb-2">Password Baru</label>
+                                    <input type="password" id="new-pass" class="w-full px-4 py-2 border rounded-lg" required>
+                                </div>
+                                <div class="mb-4">
+                                    <label for="confirm-pass" class="block text-slate-600 mb-2">Konfirmasi Password Baru</label>
+                                    <input type="password" id="confirm-pass" class="w-full px-4 py-2 border rounded-lg" required>
+                                </div>
+                                <button type="submit" class="bg-sky-500 text-white px-6 py-2 rounded-lg font-semibold">Simpan Perubahan</button>
+                            </form>
+                        </div>
+                    </div>`;
 
-                // Attach event listeners
-                document.getElementById('back-to-dashboard-btn').addEventListener('click', renderAdminDashboard);
-                document.getElementById('admin-approve-btn').addEventListener('click', e => handleApproveBook(e.target.dataset.id));
-                document.getElementById('admin-reject-btn').addEventListener('click', e => handleRejectBook(e.target.dataset.id));
+                document.getElementById('change-password-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    showNotification('Fitur ganti password akan segera hadir!');
+                });
+            }
+
+            function renderAdminDashboard(activeTab = 'review') {
+                 document.getElementById('main-content').innerHTML = `
+                    <h1 class="text-4xl font-bold text-slate-800 mb-2">Dasbor Admin</h1>
+                    <p class="text-slate-500 mb-8">Selamat datang, ${currentUser.name}. Kelola pustaka dari sini.</p>
+                    <div class="flex border-b mb-6">
+                        <button data-tab="review" class="admin-tab px-6 py-3 font-semibold ${activeTab === 'review' ? 'border-b-2 border-sky-500 text-sky-600' : 'text-slate-500'}">Tinjau Karya</button>
+                        <button data-tab="books" class="admin-tab px-6 py-3 font-semibold ${activeTab === 'books' ? 'border-b-2 border-sky-500 text-sky-600' : 'text-slate-500'}">Kelola Buku</button>
+                        <button data-tab="users" class="admin-tab px-6 py-3 font-semibold ${activeTab === 'users' ? 'border-b-2 border-sky-500 text-sky-600' : 'text-slate-500'}">Kelola Pengguna</button>
+                    </div>
+                    <div id="admin-content"></div>`;
+
+                if (activeTab === 'review') renderAdminReviewView();
+                else if (activeTab === 'books') renderBookManagement();
+                else if (activeTab === 'users') renderUserManagement();
+
+                document.querySelectorAll('.admin-tab').forEach(tab => {
+                    tab.addEventListener('click', (e) => renderAdminDashboard(e.target.dataset.tab));
+                });
+            }
+
+            function renderAdminReviewView() {
+                const unapprovedBooks = books.filter(b => !b.approved);
+                let content = `<h2 class="text-2xl font-semibold mb-4">Karya yang Perlu Ditinjau (${unapprovedBooks.length})</h2>`;
+                if (unapprovedBooks.length === 0) {
+                    content += `<p class="text-slate-500">Tidak ada karya baru yang perlu ditinjau.</p>`;
+                } else {
+                    content += `<div class="bg-white rounded-lg shadow-sm overflow-hidden">
+                        <table class="w-full">
+                            <thead class="bg-slate-50"><tr><th class="p-4 text-left font-semibold text-slate-600">Judul</th><th class="p-4 text-left font-semibold text-slate-600">Penulis</th><th class="p-4 text-left font-semibold text-slate-600">Aksi</th></tr></thead>
+                            <tbody>
+                            ${unapprovedBooks.map(book => `
+                                <tr class="border-b">
+                                    <td class="p-4">${book.title}</td>
+                                    <td class="p-4 text-slate-600">${book.author}</td>
+                                    <td class="p-4 flex gap-2">
+                                        <button onclick="handleApproveBook(${book.id})" class="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full font-semibold">Setujui</button>
+                                        <button onclick="handleRejectBook(${book.id})" class="text-xs bg-red-100 text-red-700 px-3 py-1 rounded-full font-semibold">Tolak</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                            </tbody>
+                        </table>
+                    </div>`;
+                }
+                document.getElementById('admin-content').innerHTML = content;
             }
             
             function renderBookManagement() {
-                const tabContent = document.getElementById('admin-tab-content');
-                const approvedBooks = books.filter(b => b.approved);
-                let bookRows = approvedBooks.map(book => `
-                    <tr class="border-b"><td class="py-3 px-4 text-slate-700">${book.title}</td><td class="py-3 px-4 text-slate-500">${book.author}</td>
-                    <td class="py-3 px-4 text-right"><button class="edit-book-btn text-sky-600 hover:text-sky-800 font-medium mr-4" data-id="${book.id}">Edit</button><button class="delete-book-btn text-red-600 hover:text-red-800 font-medium" data-id="${book.id}">Hapus</button></td></tr>`).join('');
-                tabContent.innerHTML = `
-                    <div class="flex justify-between items-center mb-4"><h2 class="text-xl font-semibold">Daftar Buku Terunggah</h2><button id="admin-add-book-btn" class="bg-sky-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-sky-600">Tambah Buku Baru</button></div>
-                    <div class="overflow-x-auto"><table class="min-w-full bg-white"><thead><tr class="bg-slate-50 border-b"><th class="py-2 px-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Judul</th><th class="py-2 px-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Penulis</th><th class="py-2 px-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Aksi</th></tr></thead><tbody>${bookRows}</tbody></table></div>`;
-                document.getElementById('admin-add-book-btn').addEventListener('click', () => renderBookForm());
-                document.querySelectorAll('.edit-book-btn').forEach(btn => btn.addEventListener('click', e => handleEditBook(e.target.dataset.id)));
-                document.querySelectorAll('.delete-book-btn').forEach(btn => btn.addEventListener('click', e => handleDeleteBook(e.target.dataset.id)));
+                const allBooks = books; // All books, approved or not
+                let content = `<div class="flex justify-between items-center mb-4"><h2 class="text-2xl font-semibold">Daftar Semua Buku (${allBooks.length})</h2><button id="add-new-book-btn" class="bg-sky-500 text-white px-4 py-2 rounded-lg font-semibold">Tambah Buku Baru</button></div>`;
+                content += `<div class="bg-white rounded-lg shadow-sm overflow-hidden">
+                    <table class="w-full">
+                        <thead class="bg-slate-50"><tr><th class="p-4 text-left font-semibold text-slate-600">Judul</th><th class="p-4 text-left font-semibold text-slate-600">Status</th><th class="p-4 text-left font-semibold text-slate-600">Aksi</th></tr></thead>
+                        <tbody>
+                        ${allBooks.map(book => `
+                            <tr class="border-b">
+                                <td class="p-4">${book.title}</td>
+                                <td class="p-4"><span class="text-xs font-semibold px-2 py-1 rounded-full ${book.approved ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}">${book.approved ? 'Disetujui' : 'Menunggu'}</span></td>
+                                <td class="p-4 flex gap-2">
+                                    <button onclick="renderBookForm(${book.id})" class="text-xs bg-slate-100 text-slate-700 px-3 py-1 rounded-full font-semibold">Edit</button>
+                                    <button onclick="handleDeleteBook(${book.id})" class="text-xs bg-red-100 text-red-700 px-3 py-1 rounded-full font-semibold">Hapus</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                        </tbody>
+                    </table>
+                </div>`;
+                document.getElementById('admin-content').innerHTML = content;
+                document.getElementById('add-new-book-btn').addEventListener('click', () => renderBookForm());
             }
 
             function renderUserManagement() {
-                const tabContent = document.getElementById('admin-tab-content');
-                const students = users.filter(user => user.role === 'student');
-                let userRows = students.map(user => `
-                    <tr class="border-b"><td class="py-3 px-4 text-slate-700">${user.name}</td><td class="py-3 px-4 text-slate-500">${user.username}</td><td class="py-3 px-4 text-right"><button class="delete-user-btn text-red-600 hover:text-red-800 font-medium" data-id="${user.id}">Hapus</button></td></tr>`).join('');
-                tabContent.innerHTML = `
-                    <div class="flex justify-between items-center mb-4"><h2 class="text-xl font-semibold">Daftar Akun Siswa</h2><button id="admin-add-user-btn" class="bg-emerald-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-emerald-600">Tambah Akun Siswa</button></div>
-                    <div class="overflow-x-auto"><table class="min-w-full bg-white"><thead><tr class="bg-slate-50 border-b"><th class="py-2 px-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Nama</th><th class="py-2 px-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Username</th><th class="py-2 px-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Aksi</th></tr></thead><tbody>${userRows}</tbody></table></div>`;
-                document.getElementById('admin-add-user-btn').addEventListener('click', renderUserForm);
-                document.querySelectorAll('.delete-user-btn').forEach(btn => btn.addEventListener('click', e => handleDeleteUser(e.target.dataset.id)));
+                let content = `<div class="flex justify-between items-center mb-4"><h2 class="text-2xl font-semibold">Daftar Pengguna (${users.length})</h2></div>`;
+                content += `<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-lg shadow-sm">
+                        <h3 class="font-semibold mb-4">Tambah Siswa Baru</h3>
+                        <form id="add-user-form">
+                            <input id="new-name" class="w-full p-2 border rounded mb-2" placeholder="Nama Lengkap" required>
+                            <input id="new-username" class="w-full p-2 border rounded mb-2" placeholder="Username" required>
+                            <input id="new-password" type="password" class="w-full p-2 border rounded mb-4" placeholder="Password" required>
+                            <button type="submit" class="bg-sky-500 text-white w-full py-2 rounded-lg">Tambah Akun</button>
+                        </form>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-sm">
+                        <h3 class="font-semibold mb-4">Daftar Akun</h3>
+                        <ul class="max-h-64 overflow-y-auto">
+                        ${users.map(user => `
+                            <li class="flex justify-between items-center p-2 border-b">
+                                <div><p>${user.name}</p><p class="text-sm text-slate-500">${user.role}</p></div>
+                                ${user.id !== currentUser.id ? `<button onclick="handleDeleteUser(${user.id})" class="text-xs bg-red-100 text-red-700 px-3 py-1 rounded-full font-semibold">Hapus</button>` : ''}
+                            </li>
+                        `).join('')}
+                        </ul>
+                    </div>
+                </div>`;
+                document.getElementById('admin-content').innerHTML = content;
+                document.getElementById('add-user-form').addEventListener('submit', handleSaveUser);
             }
 
-            function renderUserForm() {
-                document.getElementById('main-content').innerHTML = `
-                    <div class="max-w-lg mx-auto bg-white p-8 rounded-2xl shadow-lg">
-                        <h1 class="text-2xl font-bold mb-6">Tambah Akun Siswa Baru</h1>
-                        <form id="user-form">
-                            <div class="mb-4"><label for="new-name" class="block text-slate-600 mb-1">Nama Lengkap</label><input type="text" id="new-name" class="w-full px-3 py-2 border rounded-lg" required></div>
-                            <div class="mb-4"><label for="new-username" class="block text-slate-600 mb-1">Username</label><input type="text" id="new-username" class="w-full px-3 py-2 border rounded-lg" required></div>
-                            <div class="mb-6"><label for="new-password" class="block text-slate-600 mb-1">Password</label><input type="password" id="new-password" class="w-full px-3 py-2 border rounded-lg" required></div>
-                            <div class="mt-6 flex justify-end"><button type="button" id="cancel-user-form-btn" class="px-4 py-2 rounded-lg text-slate-600 mr-2">Batal</button><button type="submit" class="px-6 py-2 bg-emerald-500 text-white rounded-lg font-semibold">Simpan Akun</button></div>
-                        </form>
-                    </div>`;
-                document.getElementById('cancel-user-form-btn').addEventListener('click', () => renderAdminDashboard('users'));
-                document.getElementById('user-form').addEventListener('submit', handleSaveUser);
-            }
-            
-            function renderBookForm(bookToEdit = null, isStudent = false) {
-                const isEditing = !!bookToEdit;
-                const title = isStudent ? 'Tulis Cerita Baru' : (isEditing ? 'Edit Buku' : 'Tambah Buku Baru');
+            function renderBookForm(bookId = null, isStudentSubmission = false) {
+                const book = bookId ? books.find(b => b.id == bookId) : null;
+                const title = book ? 'Edit Buku' : (isStudentSubmission ? 'Kirim Cerita Baru' : 'Tambah Buku Baru');
                 
                 document.getElementById('main-content').innerHTML = `
-                <div class="max-w-2xl mx-auto bg-white p-8 rounded-2xl shadow-lg">
-                    <h1 class="text-2xl font-bold mb-6">${title}</h1>
-                    <form id="book-form" class="space-y-4">
-                        <input type="hidden" id="book-id" value="${isEditing ? bookToEdit.id : ''}">
-                        <div><label class="block mb-1">Judul Cerita</label><input type="text" id="title" class="w-full border rounded p-2" value="${isEditing ? bookToEdit.title : ''}" required></div>
-                        ${isStudent ? '' : `<div><label class="block mb-1">Penulis</label><input type="text" id="author" class="w-full border rounded p-2" value="${isEditing ? bookToEdit.author : ''}" required></div>
-                                           <div><label class="block mb-1">URL Sampul Buku</label><input type="text" id="cover" class="w-full border rounded p-2" value="${isEditing ? bookToEdit.cover : ''}" placeholder="Kosongkan untuk auto-generate"></div>`}
-                        <div><label class="block mb-1">Genre</label><select id="genre" class="w-full border rounded p-2">${genres.map(g => `<option value="${g.id}" ${isEditing && bookToEdit.genreId == g.id ? 'selected' : ''}>${g.name}</option>`).join('')}</select></div>
-                        <div><label class="block mb-1">Deskripsi Singkat</label><textarea id="description" rows="3" class="w-full border rounded p-2">${isEditing ? bookToEdit.description : ''}</textarea></div>
-                        <div><label class="block mb-1">Isi Cerita</label><textarea id="content" rows="8" class="w-full border rounded p-2">${isEditing ? bookToEdit.content : ''}</textarea></div>
-                        <div class="flex justify-end gap-2"><button type="button" id="cancel-form-btn" class="px-4 py-2 bg-slate-200 rounded">Batal</button><button type="submit" class="px-4 py-2 bg-sky-500 text-white rounded">Kirim untuk Ditinjau</button></div>
-                    </form>
-                </div>`;
-                document.getElementById('cancel-form-btn').addEventListener('click', renderLibrary);
-                document.getElementById('book-form').addEventListener('submit', (e) => handleSaveBook(e, isStudent));
-            }
+                    <h1 class="text-4xl font-bold text-slate-800 mb-8">${title}</h1>
+                    <form id="book-form" class="bg-white p-8 rounded-lg shadow-sm">
+                        <input type="hidden" id="book-id" value="${book ? book.id : ''}">
+                        <div class="mb-4">
+                            <label for="title" class="block text-slate-600 mb-2">Judul</label>
+                            <input type="text" id="title" class="w-full p-2 border rounded-lg" value="${book ? book.title : ''}" required>
+                        </div>
+                        ${!isStudentSubmission ? `
+                        <div class="mb-4">
+                            <label for="author" class="block text-slate-600 mb-2">Penulis</label>
+                            <input type="text" id="author" class="w-full p-2 border rounded-lg" value="${book ? book.author : ''}" required>
+                        </div>` : ''}
+                        ${!isStudentSubmission ? `
+                        <div class="mb-4">
+                            <label for="cover" class="block text-slate-600 mb-2">URL Cover Buku</label>
+                            <input type="text" id="cover" class="w-full p-2 border rounded-lg" value="${book ? book.cover : ''}">
+                        </div>` : ''}
+                        <div class="mb-4">
+                             <label for="genre" class="block text-slate-600 mb-2">Genre</label>
+                             <select id="genre" class="w-full p-2 border rounded-lg">
+                                ${genres.map(g => `<option value="${g.id}" ${book && book.genreId == g.id ? 'selected' : ''}>${g.name}</option>`).join('')}
+                             </select>
+                        </div>
+                        <div class="mb-4">
+                            <label for="description" class="block text-slate-600 mb-2">Deskripsi Singkat</label>
+                            <textarea id="description" class="w-full p-2 border rounded-lg" rows="4">${book ? book.description : ''}</textarea>
+                        </div>
+                        <div class="mb-6">
+                            <label for="content" class="block text-slate-600 mb-2">Isi Cerita</label>
+                            <textarea id="content" class="w-full p-2 border rounded-lg" rows="10" placeholder="Tuliskan seluruh isi ceritamu di sini...">${book ? book.content : ''}</textarea>
+                        </div>
+                        <div class="flex gap-4">
+                            <button type="submit" class="bg-sky-500 text-white px-6 py-3 rounded-lg font-semibold">${book ? 'Simpan Perubahan' : 'Kirim'}</button>
+                            <button type="button" id="cancel-form-btn" class="bg-slate-100 text-slate-700 px-6 py-3 rounded-lg font-semibold">Batal</button>
+                        </div>
+                    </form>`;
 
+                document.getElementById('book-form').addEventListener('submit', (e) => handleSaveBook(e, isStudentSubmission));
+                document.getElementById('cancel-form-btn').addEventListener('click', isStudentSubmission ? renderLibrary : renderAdminDashboard);
+            }
             // ====================================================== //
             //                   EVENT HANDLERS                       //
             // ====================================================== //
 
-            document.getElementById('login-form').addEventListener('submit', (e) => { e.preventDefault(); const user = users.find(u => u.username === e.target.username.value && u.password === e.target.password.value); if (user) { currentUser = user; document.getElementById('login-page').classList.add('hidden'); document.getElementById('main-app').classList.remove('hidden'); setupAppForUser(); renderLibrary(); } else { document.getElementById('login-error').textContent = 'Username atau password salah.'; document.getElementById('login-error').classList.remove('hidden'); } });
+            document.getElementById('login-form').addEventListener('submit', async (e) => { 
+                e.preventDefault(); 
+                const username = e.target.username.value;
+                const password = e.target.password.value;
+                
+                const { data, error } = await supabaseClient
+                    .from('users')
+                    .select('*')
+                    .eq('username', username)
+                    .eq('password', password)
+                    .single();
+
+                // Handle potential errors
+                if (error && error.code !== 'PGRST116') {
+                    // This is an unexpected error (network, config, etc.)
+                    console.error('Unexpected login error:', error);
+                    document.getElementById('login-error').textContent = 'Terjadi kesalahan sistem. Coba lagi.';
+                    document.getElementById('login-error').classList.remove('hidden');
+                } else if (data) {
+                    // Successful login
+                    currentUser = data;
+                    document.getElementById('login-page').classList.add('hidden');
+                    document.getElementById('main-app').classList.remove('hidden');
+                    await fetchAllData();
+                    setupAppForUser();
+                    renderLibrary();
+                } else {
+                    // This case handles error code 'PGRST116' (no rows found), which means wrong credentials.
+                    document.getElementById('login-error').textContent = 'Username atau password salah.';
+                    document.getElementById('login-error').classList.remove('hidden');
+                }
+            });
+
             function applyFilters() { const term = document.getElementById('search-input').value.toLowerCase(); const genre = document.getElementById('genre-filter').value; const approvedBooks = books.filter(b => b.approved); const filtered = approvedBooks.filter(b => (b.title.toLowerCase().includes(term) || b.author.toLowerCase().includes(term)) && (genre === 'all' || b.genreId == genre)); renderBookGrid(filtered); }
             function toggleReadingList(bookId) { const id = parseInt(bookId); const index = readingList.indexOf(id); if (index > -1) { readingList.splice(index, 1); } else { readingList.push(id); } renderBookDetail(bookId); }
-            function handleAddComment(event, bookId) {
+            
+            async function handleAddComment(event, bookId) {
                 event.preventDefault();
                 const commentInput = document.getElementById('comment-input');
                 const commentText = commentInput.value.trim();
                 if (commentText) {
                     const book = books.find(b => b.id == bookId);
-                    book.comments.push({ user: currentUser.name, text: commentText });
-                    commentInput.value = '';
-                    showNotification('Komentar berhasil ditambahkan!');
-                    renderReaderView(bookId);
+                    const newComment = { user: currentUser.name, text: commentText };
+                    const updatedComments = [...(book.comments || []), newComment];
+
+                    const { error } = await supabaseClient
+                        .from('books')
+                        .update({ comments: updatedComments })
+                        .eq('id', bookId);
+
+                    if (error) {
+                        showNotification('Gagal mengirim komentar.', true);
+                        console.error('Error adding comment:', error);
+                    } else {
+                        book.comments = updatedComments; // Update state lokal
+                        commentInput.value = '';
+                        showNotification('Komentar berhasil ditambahkan!');
+                        renderReaderView(bookId);
+                    }
                 }
             }
-            function handleSaveBook(e, isStudent = false) { e.preventDefault(); const id = document.getElementById('book-id').value; const title = document.getElementById('title').value; const author = isStudent ? currentUser.name : document.getElementById('author').value; let coverUrl; if (isStudent) { coverUrl = `https://placehold.co/400x600/a78bfa/ffffff?text=Karya+Siswa`; } else { coverUrl = document.getElementById('cover').value; if (!coverUrl) { coverUrl = `https://placehold.co/400x600/78716c/ffffff?text=Buku+Baru`; } } const newBookData = { title: title, author: author, cover: coverUrl, genreId: parseInt(document.getElementById('genre').value), description: document.getElementById('description').value, content: document.getElementById('content').value, rating: 0, status: 'Tersedia', comments: [] }; if (id) { const bookIndex = books.findIndex(b => b.id == id); books[bookIndex] = { ...books[bookIndex], ...newBookData, approved: false }; showNotification('Buku berhasil diperbarui & dikirim ulang untuk ditinjau!'); } else { newBookData.id = Math.max(...books.map(b => b.id), 0) + 1; newBookData.approved = false; books.push(newBookData); showNotification('Karya berhasil dikirim untuk ditinjau!'); } if (isStudent) { renderLibrary(); } else { renderAdminDashboard(); } }
-            function handleEditBook(id) { renderBookForm(books.find(b => b.id == id)); }
-            function handleDeleteBook(id) { const book = books.find(b => b.id == id); showConfirmationModal({ title: 'Hapus Buku', message: `Yakin hapus "${book.title}"?`, onConfirm: () => { books = books.filter(b => b.id != id); showNotification('Buku dihapus.'); renderBookManagement(); }}); }
-            function handleApproveBook(bookId) { const book = books.find(b => b.id == bookId); if (book) { book.approved = true; showNotification(`"${book.title}" telah disetujui.`); renderAdminDashboard(); } }
-            function handleRejectBook(bookId) { const book = books.find(b => b.id == bookId); if (!book) return; showConfirmationModal({ title: 'Tolak Buku', message: `Yakin ingin menolak & menghapus "${book.title}"?`, onConfirm: () => { books = books.filter(b => b.id != bookId); showNotification('Buku ditolak & dihapus.'); renderAdminDashboard(); }}); }
-            function handleSaveUser(e) { e.preventDefault(); const name = document.getElementById('new-name').value; const username = document.getElementById('new-username').value; const password = document.getElementById('new-password').value; if (!name || !username || !password) { showNotification('Semua kolom harus diisi.', true); return; } if (users.some(u => u.username === username)) { showNotification('Username sudah ada. Silakan gunakan username lain.', true); return; } const newId = Math.max(...users.map(u => u.id), 0) + 1; users.push({ id: newId, username, password, role: 'student', name }); showNotification('Akun siswa baru berhasil ditambahkan!'); renderAdminDashboard('users'); }
-            function handleDeleteUser(id) { const user = users.find(u => u.id == id); if (!user) return; showConfirmationModal({ title: 'Hapus Pengguna', message: `Yakin hapus pengguna "${user.name}"?`, onConfirm: () => { users = users.filter(u => u.id != id); showNotification('Pengguna dihapus.'); renderUserManagement(); }}); }
 
+            async function handleSaveBook(e, isStudent = false) { 
+                e.preventDefault(); 
+                const id = document.getElementById('book-id').value; 
+                const title = document.getElementById('title').value; 
+                const author = isStudent ? currentUser.name : document.getElementById('author').value; 
+                let coverUrl; 
+                if (isStudent) { coverUrl = `https://placehold.co/400x600/a78bfa/ffffff?text=Karya+Siswa`; } else { coverUrl = document.getElementById('cover').value; if (!coverUrl) { coverUrl = `https://placehold.co/400x600/78716c/ffffff?text=Buku+Baru`; } } 
+                const newBookData = { title: title, author: author, cover: coverUrl, genreId: parseInt(document.getElementById('genre').value), description: document.getElementById('description').value, content: document.getElementById('content').value, approved: isStudent ? false : true }; 
+                
+                let error;
+                if (id) { // Update
+                    const { data, error: updateError } = await supabaseClient.from('books').update(newBookData).eq('id', id).select();
+                    error = updateError;
+                } else { // Insert
+                    const { data, error: insertError } = await supabaseClient.from('books').insert([newBookData]).select();
+                    error = insertError;
+                }
+
+                if(error) {
+                    showNotification('Gagal menyimpan buku.', true);
+                    console.error('Save book error:', error);
+                } else {
+                    showNotification(isStudent ? 'Karya berhasil dikirim untuk ditinjau!' : 'Buku berhasil disimpan!');
+                    await fetchAllData();
+                    if (isStudent) { renderLibrary(); } else { renderAdminDashboard('books'); }
+                }
+            }
+            
+            async function handleDeleteBook(id) { 
+                const book = books.find(b => b.id == id); 
+                showConfirmationModal({ 
+                    title: 'Hapus Buku', 
+                    message: `Yakin hapus "${book.title}"?`, 
+                    onConfirm: async () => { 
+                        const { error } = await supabaseClient.from('books').delete().eq('id', id);
+                        if(error) {
+                            showNotification('Gagal menghapus buku.', true);
+                            console.error(error);
+                        } else {
+                            await fetchAllData();
+                            showNotification('Buku dihapus.'); 
+                            renderBookManagement(); 
+                        }
+                    }
+                }); 
+            }
+            
+            async function handleApproveBook(bookId) {
+                const { error } = await supabaseClient.from('books').update({ approved: true }).eq('id', bookId);
+                if(error){
+                    showNotification('Gagal menyetujui buku.', true);
+                } else {
+                    const book = books.find(b => b.id == bookId);
+                    showNotification(`"${book.title}" telah disetujui.`); 
+                    await fetchAllData();
+                    renderAdminDashboard(); 
+                }
+            }
+
+            async function handleRejectBook(bookId) {
+                const book = books.find(b => b.id == bookId); 
+                if (!book) return; 
+                showConfirmationModal({ 
+                    title: 'Tolak Buku', 
+                    message: `Yakin ingin menolak & menghapus "${book.title}"?`, 
+                    onConfirm: async () => { 
+                        const { error } = await supabaseClient.from('books').delete().eq('id', bookId);
+                        if(error) {
+                            showNotification('Gagal menolak buku.', true);
+                        } else {
+                            await fetchAllData();
+                            showNotification('Buku ditolak & dihapus.'); 
+                            renderAdminDashboard(); 
+                        }
+                    }
+                }); 
+            }
+            
+            async function handleSaveUser(e) {
+                e.preventDefault();
+                const name = document.getElementById('new-name').value;
+                const username = document.getElementById('new-username').value;
+                const password = document.getElementById('new-password').value;
+                if (!name || !username || !password) { showNotification('Semua kolom harus diisi.', true); return; }
+                
+                // PERBAIKAN: Logika pengecekan duplikat diperbaiki
+                const { data: existingUser, error: checkError } = await supabaseClient
+                    .from('users')
+                    .select('username')
+                    .eq('username', username)
+                    .single();
+
+                // Kode error 'PGRST116' berarti "tidak ada baris ditemukan"
+                // Ini adalah hal yang BAIK, artinya username tersedia.
+                // Kita hanya berhenti jika ada error LAINNYA.
+                if (checkError && checkError.code !== 'PGRST116') {
+                    showNotification('Gagal memeriksa username.', true);
+                    console.error('Check user error:', checkError);
+                    return;
+                }
+                
+                // Jika existingUser ada datanya (TIDAK null), berarti username sudah dipakai
+                if (existingUser) {
+                    showNotification('Username sudah ada.', true);
+                    return;
+                }
+
+                // Jika lolos (existingUser null DAN checkError 'PGRST116' atau null),
+                // maka kita bisa insert
+                const { error: insertError } = await supabaseClient.from('users').insert([{ name, username, password, role: 'student' }]);
+                
+                if (insertError) {
+                    showNotification('Gagal menambah akun.', true);
+                    // Error ini bisa jadi karena RLS belum dimatikan!
+                    console.error("Add user error:", insertError);
+                } else {
+                    await fetchAllData();
+                    showNotification('Akun siswa baru berhasil ditambahkan!');
+                    renderUserManagement();
+                }
+            }
+
+            async function handleDeleteUser(id) {
+                const user = users.find(u => u.id == id); 
+                if (!user) return; 
+                showConfirmationModal({ 
+                    title: 'Hapus Pengguna', 
+                    message: `Yakin hapus pengguna "${user.name}"?`, 
+                    onConfirm: async () => { 
+                        const { error } = await supabaseClient.from('users').delete().eq('id', id);
+                        if(error) {
+                            showNotification('Gagal menghapus pengguna.', true);
+                        } else {
+                            await fetchAllData();
+                            showNotification('Pengguna dihapus.'); 
+                            renderUserManagement(); 
+                        }
+                    }
+                }); 
+            }
             // ====================================================== //
             //                     INITIALIZATION                     //
             // ====================================================== //
@@ -626,9 +792,14 @@
                 const userMenu = document.getElementById('user-menu');
                 let menuItems = ``;
 
-                if(currentUser.role === 'student') {
-                    menuItems += `<a href="#" id="write-story-btn-menu" class="block px-4 py-2 text-slate-700 hover:bg-slate-100">Tulis Cerita</a><div class="my-1 h-px bg-slate-200"></div>`;
+                if(currentUser.role === 'admin') {
+                     menuItems += `<a href="#" id="admin-dashboard-btn" class="block px-4 py-2 text-slate-700 hover:bg-slate-100">Dasbor Admin</a>`;
                 }
+                if(currentUser.role === 'student') {
+                    menuItems += `<a href="#" id="write-story-btn-menu" class="block px-4 py-2 text-slate-700 hover:bg-slate-100">Tulis Cerita</a>`;
+                }
+                if(menuItems !== '') menuItems += `<div class="my-1 h-px bg-slate-200"></div>`;
+
 
                 menuItems += `
                     <a href="#" id="reading-list-btn-menu" class="block px-4 py-2 text-slate-700 hover:bg-slate-100">Daftar Bacaan</a>
@@ -636,7 +807,6 @@
                     <div class="my-1 h-px bg-slate-200"></div>
                     <a href="#" id="settings-btn-menu" class="block px-4 py-2 text-slate-700 hover:bg-slate-100">Akun & Pengaturan</a>
                     <a href="#" id="logout-btn" class="block px-4 py-2 text-slate-700 hover:bg-slate-100">Keluar</a>`;
-                if (currentUser.role === 'admin') { menuItems = `<a href="#" id="admin-dashboard-btn" class="block px-4 py-2 text-slate-700 hover:bg-slate-100">Dasbor Admin</a>` + menuItems; }
                 userMenu.innerHTML = menuItems;
                 
                 document.getElementById('logout-btn').addEventListener('click', () => { location.reload(); });
@@ -647,12 +817,19 @@
                 if (currentUser.role === 'student') { document.getElementById('write-story-btn-menu').addEventListener('click', () => renderBookForm(null, true)); }
             }
 
+            // Make some functions globally accessible for inline onclick handlers
+            window.handleApproveBook = handleApproveBook;
+            window.handleRejectBook = handleRejectBook;
+            window.handleDeleteBook = handleDeleteBook;
+            window.handleDeleteUser = handleDeleteUser;
+            window.renderBookForm = renderBookForm;
+
             document.getElementById('logo-btn').addEventListener('click', renderLibrary);
             document.getElementById('user-menu-btn').addEventListener('click', () => document.getElementById('user-menu').classList.toggle('hidden'));
             document.addEventListener('click', (e) => { if (!document.getElementById('user-menu-btn').contains(e.target) && !document.getElementById('user-menu').contains(e.target)) { document.getElementById('user-menu').classList.add('hidden'); } });
             showRandomQuote();
+            
         });
     </script>
 </body>
 </html>
-
