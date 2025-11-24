@@ -79,7 +79,7 @@
                         <p id="login-error" class="text-red-500 text-sm mb-4 hidden"></p>
                         <button type="submit" class="w-full bg-sky-500 text-white py-3 rounded-lg font-semibold hover:bg-sky-600 active:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-opacity-75 smooth-transition shadow-md hover:shadow-lg">Masuk</button>
                     </form>
-                    <p class="text-xs text-slate-400 mt-8 text-center">Login setelah menghubungkan ke Supabase. Data demo tidak lagi digunakan.</p>
+                    <!-- <p class="text-xs text-slate-400 mt-8 text-center">Login setelah menghubungkan ke Supabase. Data demo tidak lagi digunakan.</p> -->
                 </div>
             </div>
         </div>
@@ -239,6 +239,10 @@
                 const book = books.find(b => b.id == bookId); if (!book) return;
                 const isInReadingList = readingList.includes(book.id);
                 
+                // === PENGECEKAN BARU ===
+                // Cek apakah pengguna saat ini adalah penulis buku
+                const isAuthor = currentUser && currentUser.name === book.author;
+
                 document.getElementById('main-content').innerHTML = `
                     <div class="bg-white p-6 md:p-8 rounded-2xl shadow-lg">
                         <button id="back-to-library" class="flex items-center text-slate-600 hover:text-sky-600 mb-6"><svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>Kembali</button>
@@ -251,12 +255,34 @@
                                     <button data-id="${book.id}" class="read-now-btn flex-1 bg-sky-500 text-white py-3 px-6 rounded-lg font-semibold hover:bg-sky-600" ${book.status !== 'Tersedia' ? 'disabled' : ''}>Baca Sekarang</button>
                                     <button data-id="${book.id}" class="toggle-reading-list-btn flex-1 ${isInReadingList ? 'bg-red-500 hover:bg-red-600' : 'bg-slate-700 hover:bg-slate-800'} text-white py-3 px-6 rounded-lg font-semibold">${isInReadingList ? 'Hapus dari Daftar' : 'Tambah ke Daftar'}</button>
                                 </div>
+                                
+                                <!-- === TOMBOL BARU HANYA UNTUK PENULIS === -->
+                                ${isAuthor ? `
+                                <div class="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                                    <h4 class="font-semibold text-green-800">Panel Penulis</h4>
+                                    <p class="text-sm text-green-700 mb-3">Anda adalah penulis buku ini. Tambahkan bab baru ke cerita Anda.</p>
+                                    <button data-id="${book.id}" id="add-chapter-btn" class="w-full bg-green-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-green-700">
+                                        Tambah Bab Baru
+                                    </button>
+                                </div>
+                                ` : ''}
+                                <!-- ======================================= -->
+
                             </div>
                         </div>
                     </div>`;
                 document.getElementById('back-to-library').addEventListener('click', renderLibrary);
                 document.querySelector('.read-now-btn').addEventListener('click', e => renderReaderView(e.target.dataset.id));
                 document.querySelector('.toggle-reading-list-btn').addEventListener('click', e => toggleReadingList(e.target.dataset.id));
+            
+                // === TAMBAHKAN EVENT LISTENER UNTUK TOMBOL BARU ===
+                const addChapterBtn = document.getElementById('add-chapter-btn');
+                if (addChapterBtn) {
+                    addChapterBtn.addEventListener('click', (e) => {
+                        renderAddChapterForm(e.target.dataset.id);
+                    });
+                }
+                // =============================================
             }
             
             function renderReaderView(bookId) {
@@ -277,7 +303,22 @@
                         <article class="prose max-w-none" style="font-size: var(--reader-font-size); font-family: var(--reader-font-family); color: inherit;">
                             <h1 class="text-center">${book.title}</h1>
                             <p class="text-center text-lg">oleh ${book.author}</p>
-                            ${(book.content || '').split('\n').map(p => `<p>${p}</p>`).join('')}
+                            ${
+                                // MODIFIKASI: Logika untuk mem-parsing bab
+                                // Jika baris dimulai dengan ###, itu akan menjadi judul bab
+                                (() => {
+                                    let chapterCounter = 0;
+                                    return (book.content || '').split('\n').map(line => {
+                                        if (line.startsWith('### ')) { // Ini adalah penanda Bab
+                                            chapterCounter++;
+                                            // Beri ID unik agar bisa di-scroll
+                                            return `<h2 id="bab-${chapterCounter}" class="chapter-heading !mt-12 !mb-4 !font-bold !text-inherit">${line.substring(4)}</h2>`;
+                                        }
+                                        if (line.trim() === '') return ''; // Abaikan baris kosong
+                                        return `<p class="!text-inherit">${line}</p>`;
+                                    }).join('');
+                                })()
+                            }
                         </article>
                         <div id="comments-section" class="mt-16 pt-8 border-t border-slate-300/70" style="border-color: var(--reader-text-secondary, #94a3b8)">
                             <h2 class="text-2xl font-bold mb-6">Komentar Bab</h2>
@@ -340,14 +381,32 @@
                              </div>
                         </div>
                     </div>
+
+                    <!-- PANEL BARU UNTUK DAFTAR ISI (BAB) -->
+                    <div id="reader-toc-panel" class="fixed bottom-0 left-0 right-0 bg-slate-800 text-slate-200 p-6 rounded-t-2xl z-40 transform translate-y-full smooth-transition" style="max-height: 50vh; overflow-y: auto;">
+                        <div class="relative pb-4 border-b border-slate-600 mb-4">
+                            <h3 class="text-center font-semibold text-lg">Daftar Isi</h3>
+                            <button id="close-reader-toc" class="absolute -top-2 right-0 text-slate-400 hover:text-white text-3xl p-1">&times;</button>
+                        </div>
+                        <div id="toc-list" class="space-y-2">
+                            <!-- Daftar Bab akan diisi oleh JavaScript -->
+                        </div>
+                    </div>
+
                 </div>`;
                 
                 document.getElementById('back-to-detail').addEventListener('click', e => renderBookDetail(e.target.closest('button').dataset.id));
                 document.getElementById('reader-theme-btn').addEventListener('click', toggleNightMode);
                 document.getElementById('reader-comment-btn').addEventListener('click', () => document.getElementById('comments-section').scrollIntoView({ behavior: 'smooth' }));
-                document.getElementById('reader-toc-btn').addEventListener('click', () => showNotification('Fitur daftar isi akan datang!'));
+                
+                // === PERBAIKAN 3 & 4: Mengaktifkan tombol Bab dan Tombol X ===
+                document.getElementById('reader-toc-btn').addEventListener('click', toggleReaderTOC);
+                document.getElementById('close-reader-toc').addEventListener('click', closeReaderTOC);
+
                 document.getElementById('reader-settings-btn').addEventListener('click', toggleReaderSettings);
-                document.getElementById('close-reader-settings').addEventListener('click', toggleReaderSettings);
+                document.getElementById('close-reader-settings').addEventListener('click', closeReaderSettings);
+                // ==========================================================
+
                 document.getElementById('comment-form').addEventListener('submit', (e) => handleAddComment(e, bookId));
                 document.getElementById('brightness-slider').addEventListener('input', e => document.getElementById('reader-container').style.filter = `brightness(${e.target.value}%)`);
                 document.querySelectorAll('.bg-choice').forEach(btn => btn.addEventListener('click', e => {
@@ -371,7 +430,11 @@
                 }
             }
             
-            function toggleReaderSettings() { document.getElementById('reader-settings-panel').classList.toggle('translate-y-full'); }
+            function toggleReaderSettings() { 
+                // Tutup panel TOC jika terbuka
+                document.getElementById('reader-toc-panel').classList.add('translate-y-full');
+                document.getElementById('reader-settings-panel').classList.toggle('translate-y-full'); 
+            }
             function toggleNightMode() { const isNight = getComputedStyle(document.documentElement).getPropertyValue('--reader-bg').trim() === '#0F172A'; if (isNight) { document.documentElement.style.setProperty('--reader-bg', '#FFFFFF'); document.documentElement.style.setProperty('--reader-text', '#334155'); document.getElementById('theme-icon-sun').classList.remove('hidden'); document.getElementById('theme-icon-moon').classList.add('hidden'); } else { document.documentElement.style.setProperty('--reader-bg', '#0F172A'); document.documentElement.style.setProperty('--reader-text', '#E2E8F0'); document.getElementById('theme-icon-sun').classList.add('hidden'); document.getElementById('theme-icon-moon').classList.remove('hidden'); } updateReaderColors(); }
             
             function renderListView(title, bookIds) {
@@ -386,6 +449,79 @@
                 document.getElementById('back-to-library-rl').addEventListener('click', renderLibrary);
             }
             
+            // ====================================================== //
+            //         FUNGSI BARU UNTUK FITUR DAFTAR ISI (BAB)       //
+            // ====================================================== //
+            function toggleReaderTOC() {
+                // Tutup panel lain (seperti pengaturan) jika terbuka
+                document.getElementById('reader-settings-panel').classList.add('translate-y-full');
+                
+                // Buka/Tutup panel Daftar Isi
+                const tocPanel = document.getElementById('reader-toc-panel');
+                if (tocPanel) {
+                    tocPanel.classList.toggle('translate-y-full');
+                    // Panggil fungsi untuk mengisi daftar bab hanya saat panel dibuka
+                    if (!tocPanel.classList.contains('translate-y-full')) {
+                        populateTOC();
+                    }
+                }
+            }
+
+            function populateTOC() {
+                const tocList = document.getElementById('toc-list');
+                if (!tocList) return;
+
+                // Cari semua heading bab yang kita buat di area konten
+                const headings = document.querySelectorAll('#reader-content-area .chapter-heading');
+                
+                if (headings.length === 0) {
+                    tocList.innerHTML = '<p class="text-slate-400">Tidak ada bab ditemukan di buku ini.</p><p class="text-xs text-slate-500 mt-2">Bab ditandai dengan awalan ### di dalam konten.</p>';
+                    return;
+                }
+
+                // Buat daftar link
+                tocList.innerHTML = Array.from(headings).map((heading, index) => {
+                    const chapterTitle = heading.textContent;
+                    const chapterId = heading.id; // Gunakan ID yang sudah kita buat
+                    return `
+                        <a href="#${chapterId}" data-id="${chapterId}" class="toc-link block p-2 rounded-md hover:bg-slate-700 text-slate-200">
+                            ${index + 1}. ${chapterTitle}
+                        </a>
+                    `;
+                }).join('');
+
+                // Tambahkan event listener ke setiap link bab
+                document.querySelectorAll('.toc-link').forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const targetId = e.currentTarget.dataset.id;
+                        const targetElement = document.getElementById(targetId);
+                        if (targetElement) {
+                            targetElement.scrollIntoView({ behavior: 'smooth' });
+                        }
+                        // Tutup panel setelah diklik
+                        document.getElementById('reader-toc-panel').classList.add('translate-y-full');
+                    });
+                });
+            }
+
+            // FUNGSI BARU: Hanya untuk menutup panel TOC
+            function closeReaderTOC() {
+                const tocPanel = document.getElementById('reader-toc-panel');
+                if (tocPanel) {
+                    tocPanel.classList.add('translate-y-full');
+                }
+            }
+
+            // FUNGSI BARU: Hanya untuk menutup panel Pengaturan
+            function closeReaderSettings() {
+                const settingsPanel = document.getElementById('reader-settings-panel');
+                if (settingsPanel) {
+                    settingsPanel.classList.add('translate-y-full');
+                }
+            }
+            // ====================================================== //
+
             function renderSettingsPage() {
                 document.getElementById('main-content').innerHTML = `
                     <h1 class="text-4xl font-bold text-slate-800 mb-8">Akun & Pengaturan</h1>
@@ -426,22 +562,65 @@
                         </div>
                     </div>`;
 
-                document.getElementById('change-password-form').addEventListener('submit', (e) => {
+                // === PERBAIKAN 2: Mengaktifkan Ganti Password ===
+                document.getElementById('change-password-form').addEventListener('submit', async (e) => {
                     e.preventDefault();
-                    showNotification('Fitur ganti password akan segera hadir!');
+                    
+                    const newPassword = document.getElementById('new-pass').value;
+                    const confirmPassword = document.getElementById('confirm-pass').value;
+
+                    if (!newPassword) {
+                        showNotification('Password baru tidak boleh kosong.', true);
+                        return;
+                    }
+
+                    if (newPassword !== confirmPassword) {
+                        showNotification('Password baru dan konfirmasi tidak cocok.', true);
+                        return;
+                    }
+
+                    // Logika untuk update ke Supabase
+                    try {
+                        const { error } = await supabaseClient
+                            .from('users')
+                            .update({ password: newPassword }) // Update kolom password
+                            .eq('id', currentUser.id); // Untuk pengguna yang sedang login
+
+                        if (error) {
+                            throw error;
+                        }
+
+                        showNotification('Password berhasil diganti!');
+                        // Kosongkan form
+                        document.getElementById('new-pass').value = '';
+                        document.getElementById('confirm-pass').value = '';
+                    } catch (error) {
+                        console.error('Error changing password:', error.message);
+                        showNotification('Gagal mengganti password. Coba lagi.', true);
+                    }
                 });
+                // ==========================================================
             }
 
             function renderAdminDashboard(activeTab = 'review') {
                  document.getElementById('main-content').innerHTML = `
-                    <h1 class="text-4xl font-bold text-slate-800 mb-2">Dasbor Admin</h1>
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2">
+                        <h1 class="text-4xl font-bold text-slate-800 mb-2 sm:mb-0">Dasbor Admin</h1>
+                        <button id="admin-back-to-library" class="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg font-semibold hover:bg-slate-50 text-sm sm:text-base">
+                            <svg class="w-4 h-4 sm:w-5 sm:h-5 inline-block mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                            Kembali ke Koleksi
+                        </button>
+                    </div>
                     <p class="text-slate-500 mb-8">Selamat datang, ${currentUser.name}. Kelola pustaka dari sini.</p>
-                    <div class="flex border-b mb-6">
-                        <button data-tab="review" class="admin-tab px-6 py-3 font-semibold ${activeTab === 'review' ? 'border-b-2 border-sky-500 text-sky-600' : 'text-slate-500'}">Tinjau Karya</button>
-                        <button data-tab="books" class="admin-tab px-6 py-3 font-semibold ${activeTab === 'books' ? 'border-b-2 border-sky-500 text-sky-600' : 'text-slate-500'}">Kelola Buku</button>
-                        <button data-tab="users" class="admin-tab px-6 py-3 font-semibold ${activeTab === 'users' ? 'border-b-2 border-sky-500 text-sky-600' : 'text-slate-500'}">Kelola Pengguna</button>
+                    <div class="flex border-b mb-6 overflow-x-auto">
+                        <button data-tab="review" class="admin-tab px-4 sm:px-6 py-3 font-semibold ${activeTab === 'review' ? 'border-b-2 border-sky-500 text-sky-600' : 'text-slate-500'} flex-shrink-0">Tinjau Karya</button>
+                        <button data-tab="books" class="admin-tab px-4 sm:px-6 py-3 font-semibold ${activeTab === 'books' ? 'border-b-2 border-sky-500 text-sky-600' : 'text-slate-500'} flex-shrink-0">Kelola Buku</button>
+                        <button data-tab="users" class="admin-tab px-4 sm:px-6 py-3 font-semibold ${activeTab === 'users' ? 'border-b-2 border-sky-500 text-sky-600' : 'text-slate-500'} flex-shrink-0">Kelola Pengguna</button>
                     </div>
                     <div id="admin-content"></div>`;
+                
+                // TAMBAHKAN EVENT LISTENER UNTUK TOMBOL KEMBALI
+                document.getElementById('admin-back-to-library').addEventListener('click', renderLibrary);
 
                 if (activeTab === 'review') renderAdminReviewView();
                 else if (activeTab === 'books') renderBookManagement();
@@ -466,7 +645,7 @@
                                 <tr class="border-b">
                                     <td class="p-4">${book.title}</td>
                                     <td class="p-4 text-slate-600">${book.author}</td>
-                                    <td class="p-4 flex gap-2">
+                                    <td class="p-4 flex flex-wrap gap-2">
                                         <button onclick="handleApproveBook(${book.id})" class="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full font-semibold">Setujui</button>
                                         <button onclick="handleRejectBook(${book.id})" class="text-xs bg-red-100 text-red-700 px-3 py-1 rounded-full font-semibold">Tolak</button>
                                     </td>
@@ -481,16 +660,19 @@
             
             function renderBookManagement() {
                 const allBooks = books; // All books, approved or not
-                let content = `<div class="flex justify-between items-center mb-4"><h2 class="text-2xl font-semibold">Daftar Semua Buku (${allBooks.length})</h2><button id="add-new-book-btn" class="bg-sky-500 text-white px-4 py-2 rounded-lg font-semibold">Tambah Buku Baru</button></div>`;
-                content += `<div class="bg-white rounded-lg shadow-sm overflow-hidden">
-                    <table class="w-full">
+                let content = `<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
+                                <h2 class="text-2xl font-semibold mb-2 sm:mb-0">Daftar Semua Buku (${allBooks.length})</h2>
+                                <button id="add-new-book-btn" class="bg-sky-500 text-white px-4 py-2 rounded-lg font-semibold w-full sm:w-auto">Tambah Buku Baru</button>
+                               </div>`;
+                content += `<div class="bg-white rounded-lg shadow-sm overflow-x-auto">
+                    <table class="w-full min-w-max">
                         <thead class="bg-slate-50"><tr><th class="p-4 text-left font-semibold text-slate-600">Judul</th><th class="p-4 text-left font-semibold text-slate-600">Status</th><th class="p-4 text-left font-semibold text-slate-600">Aksi</th></tr></thead>
                         <tbody>
                         ${allBooks.map(book => `
                             <tr class="border-b">
                                 <td class="p-4">${book.title}</td>
                                 <td class="p-4"><span class="text-xs font-semibold px-2 py-1 rounded-full ${book.approved ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}">${book.approved ? 'Disetujui' : 'Menunggu'}</span></td>
-                                <td class="p-4 flex gap-2">
+                                <td class="p-4 flex flex-wrap gap-2">
                                     <button onclick="renderBookForm(${book.id})" class="text-xs bg-slate-100 text-slate-700 px-3 py-1 rounded-full font-semibold">Edit</button>
                                     <button onclick="handleDeleteBook(${book.id})" class="text-xs bg-red-100 text-red-700 px-3 py-1 rounded-full font-semibold">Hapus</button>
                                 </td>
@@ -502,6 +684,81 @@
                 document.getElementById('admin-content').innerHTML = content;
                 document.getElementById('add-new-book-btn').addEventListener('click', () => renderBookForm());
             }
+
+            <!-- === FUNGSI BARU UNTUK MENAMBAHKAN BAB === -->
+            function renderAddChapterForm(bookId) {
+                const book = books.find(b => b.id == bookId);
+                if (!book) {
+                    showNotification('Buku tidak ditemukan.', true);
+                    renderLibrary();
+                    return;
+                }
+
+                document.getElementById('main-content').innerHTML = `
+                    <h1 class="text-3xl font-bold text-slate-800 mb-2">Tambah Bab Baru</h1>
+                    <p class="text-slate-500 mb-6">Untuk buku: <strong>${book.title}</strong></p>
+                    
+                    <form id="add-chapter-form" class="bg-white p-8 rounded-lg shadow-sm">
+                        <div class="mb-4">
+                            <label for="chapter-title" class="block text-slate-600 mb-2 font-semibold">Judul Bab</label>
+                            <input type="text" id="chapter-title" class="w-full p-2 border rounded-lg" placeholder="Contoh: Petualangan Dimulai" required>
+                        </div>
+                        <div class="mb-6">
+                            <label for="chapter-content" class="block text-slate-600 mb-2 font-semibold">Isi Bab</label>
+                            <textarea id="chapter-content" class="w-full p-2 border rounded-lg" rows="12" placeholder="Tuliskan isi bab baru di sini..." required></textarea>
+                        </div>
+                        <div class="flex gap-4">
+                            <button type="submit" class="bg-sky-500 text-white px-6 py-3 rounded-lg font-semibold">Simpan Bab</button>
+                            <button type="button" id="cancel-add-chapter-btn" class="bg-slate-100 text-slate-700 px-6 py-3 rounded-lg font-semibold">Batal</button>
+                        </div>
+                    </form>
+                `;
+
+                document.getElementById('add-chapter-form').addEventListener('submit', (e) => handleSaveChapter(e, bookId));
+                document.getElementById('cancel-add-chapter-btn').addEventListener('click', () => renderBookDetail(bookId));
+            }
+
+            async function handleSaveChapter(e, bookId) {
+                e.preventDefault();
+                const book = books.find(b => b.id == bookId);
+                if (!book) {
+                    showNotification('Buku tidak ditemukan.', true);
+                    return;
+                }
+
+                const chapterTitle = document.getElementById('chapter-title').value;
+                const chapterContent = document.getElementById('chapter-content').value;
+
+                if (!chapterTitle || !chapterContent) {
+                    showNotification('Judul dan Isi Bab tidak boleh kosong.', true);
+                    return;
+                }
+
+                // Ambil konten yang sudah ada
+                const existingContent = book.content || '';
+                
+                // Format bab baru (tambahkan baris baru sebelum ### untuk pemisah)
+                const newChapterText = `\n\n### ${chapterTitle}\n${chapterContent}`;
+                
+                // Gabungkan konten lama dengan bab baru
+                const fullContent = existingContent + newChapterText;
+
+                // Simpan ke Supabase
+                const { error } = await supabaseClient
+                    .from('books')
+                    .update({ content: fullContent })
+                    .eq('id', bookId);
+
+                if (error) {
+                    showNotification('Gagal menyimpan bab baru.', true);
+                    console.error('Error saving new chapter:', error.message);
+                } else {
+                    showNotification('Bab baru berhasil ditambahkan!');
+                    await fetchAllData(); // Ambil data terbaru
+                    renderBookDetail(bookId); // Kembali ke halaman detail buku
+                }
+            }
+            <!-- =========================================== -->
 
             function renderUserManagement() {
                 let content = `<div class="flex justify-between items-center mb-4"><h2 class="text-2xl font-semibold">Daftar Pengguna (${users.length})</h2></div>`;
@@ -565,7 +822,7 @@
                         </div>
                         <div class="mb-6">
                             <label for="content" class="block text-slate-600 mb-2">Isi Cerita</label>
-                            <textarea id="content" class="w-full p-2 border rounded-lg" rows="10" placeholder="Tuliskan seluruh isi ceritamu di sini...">${book ? book.content : ''}</textarea>
+                            <textarea id="content" class="w-full p-2 border rounded-lg" rows="10" placeholder="Tuliskan seluruh isi ceritamu di sini... (Awali judul bab dengan '### ')">${book ? book.content : ''}</textarea>
                         </div>
                         <div class="flex gap-4">
                             <button type="submit" class="bg-sky-500 text-white px-6 py-3 rounded-lg font-semibold">${book ? 'Simpan Perubahan' : 'Kirim'}</button>
@@ -574,7 +831,7 @@
                     </form>`;
 
                 document.getElementById('book-form').addEventListener('submit', (e) => handleSaveBook(e, isStudentSubmission));
-                document.getElementById('cancel-form-btn').addEventListener('click', isStudentSubmission ? renderLibrary : renderAdminDashboard);
+                document.getElementById('cancel-form-btn').addEventListener('click', isStudentSubmission ? renderLibrary : () => renderAdminDashboard('books'));
             }
             // ====================================================== //
             //                   EVENT HANDLERS                       //
